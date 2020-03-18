@@ -1,0 +1,8 @@
+/Library/**
+/SDL2/**
+/x64/**
+/Debug/**
+/ArgonElectron/x64/**
+/ArgonElectron/Debug/**
+/.vs/**
+vs/**
