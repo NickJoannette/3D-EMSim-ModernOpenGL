@@ -8,13 +8,13 @@
 #include <Vector>
 #include "electron.h"
 
-
 extern std::vector <cubicEntity> cubic_entities;	glm::vec3 dropspot;
 extern GLfloat * sS;
 extern Electron * eE;
 
 Display::Display(int WIDTH, int HEIGHT, Camera & cam)
 {
+	
 	*w = WIDTH;
 	*h = HEIGHT;
 	camera = &cam;
@@ -48,7 +48,6 @@ Display::Display(int WIDTH, int HEIGHT, Camera & cam)
 		printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
 	}
 
-	
 	GLenum error = GL_NO_ERROR;
 
 	glMatrixMode(GL_PROJECTION);
@@ -76,14 +75,14 @@ void Display::swapBuffers()
 	if (mouseButtonDown) {
 		if (mouseX >= 1220)
 		{
-			camera->xzangle += 0.0075;
+			camera->xzangle += 0.0125;
 			camera->GetM_Forward()->x = cosf(camera->xzangle);
 			camera->GetM_Forward()->z = sinf(camera->xzangle);
 			camera->UpdateView();
 		}
 		else if (mouseX < 120)
 		{
-			camera->xzangle -= 0.0075;
+			camera->xzangle -= 0.0125;
 			camera->GetM_Forward()->x = cosf(camera->xzangle);
 			camera->GetM_Forward()->z = sinf(camera->xzangle);
 			camera->UpdateView();
@@ -91,13 +90,13 @@ void Display::swapBuffers()
 		if (mouseY > 820)
 		{
 			camera->GetM_Forward()->y = cosf(camera->xyangle);
-			camera->xyangle += 0.0075;
+			camera->xyangle += 0.0125;
 			camera->UpdateView();
 		}
 		else if (mouseY <= 80)
 		{
 			camera->GetM_Forward()->y = cosf(camera->xyangle);
-			camera->xyangle -= 0.0075;
+			camera->xyangle -= 0.0125;
 			camera->UpdateView();
 		}
 	}
@@ -116,7 +115,7 @@ void Display::swapBuffers()
 		case SDL_MOUSEBUTTONDOWN:
 			if (e.button.button == SDL_BUTTON_LEFT)
 			{
-				mouseButtonDown = true;
+
 				glm::vec3 camPos = *camera->GetCameraPos();
 				glm::mat4 transf = glm::inverse(camera->GetPerspective());
 				float x = (2.0f * (float)mouseX) / 1440.0 - 1.0f;
@@ -128,30 +127,58 @@ void Display::swapBuffers()
 				ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
 				glm::vec3 ray_wor = (glm::inverse(camera->GetM_View()) * ray_eye);
 				ray_wor = glm::normalize(ray_wor);
-				for (int i = 0; i < 25; i++) {
+				for (int i = 0; i < 64; i++) {
 					glm::vec3 o = *eE[i].getTransform()->GetPos() - camPos;
-					std::cout << (*eE[i].getTransform()->GetPos()).x << std::endl;
 					float odotd = std::max(0.0f, dot(o, ray_wor));
 					o -= ray_wor * odotd;
-					bool intersection = (glm::length(o) * glm::length(o) <= 12*12);
+					bool intersection = (glm::length(o) * glm::length(o) <= 1*1);
 					if (intersection) {
-						sS[i] = 1.0f;
+						if (leftControlDown) {
+							eE[i].charge *= 2;
+							eE[i].mass *= 2;
+						}
+						else {
+							if (sS[i] < 1.0f) {
+								sS[i] = 1.0f;
+								eE[i].charge *= -1;
+							}
+							else {
+								sS[i] = 0.0f;
+								eE[i].charge *= -1;
+							}
+
+						}
 						break;
 					}
-					else sS[i] = 0.0f;
 				}
 			}
 			else if (e.button.button == SDL_BUTTON_RIGHT)
 			{                      
-
+				mouseButtonDown = true;
 
 			}
 			break;
 
 
+		case SDL_KEYUP:
+			switch (e.key.keysym.sym)
+			{
+			case SDLK_LCTRL:
+				leftControlDown = false;
+				//std::cout << "Left control KEY UP : : : FALSE" << std::endl;
+				break;
+			}
+			break;
 		case SDL_KEYDOWN:
 			switch (e.key.keysym.sym)
 			{
+
+			case SDLK_LCTRL:
+				//std::cout << "Left control KEY DOWN : : : TRUE" << std::endl;
+
+				leftControlDown = true;
+				break;
+
 
 			case SDLK_DELETE:
 				cubic_entities.erase(cubic_entities.end() - 1);

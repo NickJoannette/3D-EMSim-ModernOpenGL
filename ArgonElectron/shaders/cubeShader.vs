@@ -52,14 +52,17 @@ float random (vec2 st) {
 	glPosition0 = (position);
 
 		normal0 = normal;
-		float r = 0.8 * sin(0.002*time);
-		float g = 0.9 - 0.5*0.86*cos(0.0001*time);
-	float b = 0.3;
+		float r = 1.0;
+		float g = sin(0.001*time);
+	float b = 1.0;
 	
 		//if (gl_InstanceID == 0) b = 1;
 			//else if (gl_InstanceID % 2 == 0) 1;
 			//else g =  1;
-		if (selectionStatus > 0.5 ) g = 1.0;
-		else g = 0.0;
+		if (selectionStatus > 0.5 ) {
+		r = 0.0;
+		g = 1.0;
+		b = 0.0;
+		}
 		out_color = vec3(r,g,b);
 }

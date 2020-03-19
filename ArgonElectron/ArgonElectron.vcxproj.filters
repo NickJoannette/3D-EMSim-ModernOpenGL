@@ -48,6 +48,9 @@
     <ClCompile Include="obj_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="freetypehelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="display.h">
@@ -96,6 +99,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="electron.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="freetypehelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

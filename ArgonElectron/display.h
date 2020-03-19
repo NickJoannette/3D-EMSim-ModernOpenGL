@@ -43,6 +43,7 @@ protected:
 		Camera * camera;
 
 		bool mouseButtonDown = false;
+		bool leftControlDown = false;
 
 		int *w = new int;
 		int *h = new int;

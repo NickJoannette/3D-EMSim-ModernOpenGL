@@ -20,11 +20,11 @@ void main() {
 	vec3 color = out_color;
 //	gl_FragColor = vec4(out_color,1);
 	
-	vec3 lightdirection = vec3(0,1,0.05);
-	vec3 ambient = vec3(0.1,0.1,0.1);
-	float cosineincidence = (dot(lightdirection,normal0)/(length(lightdirection)*length(normal0)));
+	vec3 lightdirection = vec3(0.05,1,0.05);
+	vec3 ambient = vec3(0.6,0.6,0.6);
+	float cosineincidence = (dot(lightdirection,normal0));
 	
-	vec3 lightcolor = vec3(0.5,1.0,1.0);
+	vec3 lightcolor = vec3(1.0,1.0,1.0);
 	
 	vec3 diffuse = cosineincidence * lightcolor;
 	

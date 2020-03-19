@@ -5,7 +5,6 @@
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
-
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cstdlib>
@@ -26,6 +25,7 @@
 #include "electron.h"
 #include "physicshandler.h"
 #include "surface.h"
+#include "freetypehelper.h"
 #undef main
 
 
@@ -45,8 +45,9 @@ GLuint masterEntitySelectionStatusBufferID;
 Shader electronShader("./shaders/cubeShader");
 Mesh testObj("./res/obj.obj");
 
+freetypehelper::font_data our_font;
 
-const int sphereCount = 25;
+const int sphereCount = 64;
 glm::vec3 translations[sphereCount];
 Transform sphereTransforms[sphereCount];
 glm::mat4 sphereTransformMatrices[sphereCount];
@@ -58,7 +59,7 @@ extern Electron * eE = &electrons[0];
 int indiceCount = 0;
 
 void bufferSetup() {
-
+	our_font.init("./fonts/vespasian.ttf", 72);
 
 
 	/*
@@ -89,9 +90,9 @@ void bufferSetup() {
 	std::vector<glm::vec4> vertices;
 	std::vector<glm::vec3> normals;
 
-	int sectorCount = 28;
-	int stackCount = 14;
-	float radius = 12;
+	int sectorCount = 10;
+	int stackCount = 6;
+	float radius = 1;
 	float PI = 3.14159;
 
 	float x, y, z, xy;                              // vertex position
@@ -190,7 +191,6 @@ void bufferSetup() {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLshort), 0, GL_DYNAMIC_DRAW);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(GLshort),
 		&indices[0]);
-	int k = 0;
 
 	for (int i = 0; i < sphereCount; i++) {
 		Transform trnsf;
@@ -200,12 +200,17 @@ void bufferSetup() {
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	float timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
-	for (int i = 0; i < sphereCount; ++i) {
-			Transform * t = electrons[k].getTransform();
-			t->SetPos(glm::vec3(25*i, 0, 0));
-			t->SetRot(glm::vec3(0, 0.45*(i + 1)*timeElapsed, 0));
-			electrons[i].radius = radius;
-			sphereTransformMatrices[k++] = t->GetModel();
+	int k = 0;
+	for (int i = 0; i < cbrt(sphereCount); ++i) {
+		for (int j = 0; j < cbrt(sphereCount); ++j) {
+			for (int l = 0; l < cbrt(sphereCount); ++l) {
+				Transform * t = electrons[k].getTransform();
+				t->SetPos(glm::vec3(10 * (i), 10 * (j), 10 * l));
+				t->SetRot(glm::vec3(0, 0.45*(i + 1)*timeElapsed, 0));
+				electrons[i].radius = radius;
+				sphereTransformMatrices[k++] = t->GetModel();
+			}
+		}
 	}
 
 	// TRANSFORM BUFFERS
@@ -234,30 +239,24 @@ void entityBufferDraw() {
 	float timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 	glm::vec3 sumForces = glm::vec3(0);
 	Transform *t1, *t2;
-	for (int i = 0; i < sphereCount; ++i)
-	{
-		t1 = electrons[i].getTransform();
-
-		/*	if (abs(t1->GetPos()->x) >= worldBoundary || abs(cubic_entities[i].Position()->z) >= worldBoundary || abs(cubic_entities[i].Position()->z) >= worldBoundary)
-			{
-				cubic_entities.erase(cubic_entities.begin() + i);
-				continue;
-			}*/
-
-
-		for (int j = 0; j < sphereCount; ++j) if (j!=i)
+	if (!display.isFrozen()) {
+		for (int i = 0; i < sphereCount; ++i)
 		{
-			t2 = electrons[j].getTransform();
+			t1 = electrons[i].getTransform();
+			for (int j = 0; j < sphereCount; ++j) if (j != i)
+			{
+				t2 = electrons[j].getTransform();
 
-			//if (glm::distance(*(t1->GetPos()), *(t2->GetPos())) < 100.0) {
+				//if (glm::distance(*(t1->GetPos()), *(t2->GetPos())) < 25.0) {
 				sumForces += glm::normalize(*t1->GetPos() - *t2->GetPos()) *  (*electrons[i].getCharge())*(*electrons[j].getCharge()) / pow(glm::distance(*(t1->GetPos()), *(t2->GetPos())), 2);
-			//}
+				//}
+			}
+			electrons[i].velocity += sumForces / electrons[i].mass;
+			*t1->GetPos() += 0.050f*electrons[i].velocity;
+			*t1->GetRot() += electrons[i].charge > 0 ? (glm::vec3(0, 0.001, 0)) : (glm::vec3(0, -0.1, 0));
+			sphereTransformMatrices[i] = t1->GetModel();
+			sumForces = glm::vec3(0);
 		}
-		electrons[i].velocity += sumForces / electrons[i].mass;
-		*t1->GetPos() += 0.50f*electrons[i].velocity;
-		*t1->GetRot() += electrons[i].charge > 0 ? (glm::vec3(0, 0.001, 0)) : (glm::vec3(0, -0.01, 0));
-		sphereTransformMatrices[i] = t1->GetModel();
-		sumForces = glm::vec3(0);
 	}
 
 	electronShader.Bind();
@@ -279,16 +278,11 @@ void entityBufferDraw() {
 		&model[0][0]);
 	glUniform1f(*electronShader.getTimeU(), timeElapsed);
 	glDrawElementsInstanced(GL_TRIANGLES, indiceCount, GL_UNSIGNED_SHORT, 0, sphereCount);
+
+	glUseProgram(0);
+
 }
 
-void GUIBufferDraw() {
-
-}
-
-void DrawTriangleStrip()
-{
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
-}
 
 void render()
 {
@@ -296,8 +290,18 @@ void render()
 
 	SDL_WarpMouseInWindow(display.getWindow(), 1440 / 2, 900 / 2); // set initial mouse x,y to center of window.
 	while (!display.closed()) {
-		display.clear(0.12, 0.05, 0.05 , 0.5);
+
+		display.clear(0, 0, 0 , 0.5);
+		std::string ec = (display.isFrozen() ? "PAUSED" : "");
+		const char * c = &ec[0];
 		entityBufferDraw();
+		// Red Text
+		glColor3f(0.8, 0.90, 1.0);
+		glLoadIdentity();
+		glPushMatrix();
+		
+		freetypehelper::print(our_font, 620, 440, c);
+		glPopMatrix();
 		display.swapBuffers();
 
 	}

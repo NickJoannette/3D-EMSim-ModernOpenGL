@@ -13,6 +13,8 @@ public:
 
 	void Bind();
 	//Updates uniforms in our uniform array 
+	GLuint * Program() { return &main_program; }
+
 	void Update(const Transform& transform, const Camera& camera)
 	{
 
@@ -36,6 +38,8 @@ public:
 	GLuint * getTransfU() { return &m_uniforms[TRANSFORM_U]; }
 	GLuint * getTimeU() { return &m_uniforms[TIME_U]; }
 	GLuint * getPositionsU() { return &m_uniforms[POSITIONS_U]; }
+	GLuint * getCameraPositionU() { return &m_uniforms[CAMERAPOSITION_U]; }
+
 	virtual ~Shader();
 protected:
 private:
