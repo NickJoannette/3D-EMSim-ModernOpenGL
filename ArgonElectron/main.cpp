@@ -201,7 +201,22 @@ void bufferSetup() {
 	float timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
 	int k = 0;
-	for (int i = 0; i < cbrt(sphereCount); ++i) {
+	for (int i = 0; i < sphereCount/2; i++) {
+		Transform * t = electrons[k].getTransform();
+		t->SetPos(glm::vec3(10 * (i), 0, 0));
+		t->SetRot(glm::vec3(0, 0.45*(i + 1)*timeElapsed, 0));
+		electrons[i].radius = radius;
+		sphereTransformMatrices[k++] = t->GetModel();
+	}
+
+	for (int i = sphereCount/2; i < sphereCount; i++) {
+		Transform * t = electrons[k].getTransform();
+		t->SetPos(glm::vec3(10 * (i) - (10*(sphereCount/2)), 0, 12));
+		t->SetRot(glm::vec3(0, 0.45*(i + 1)*timeElapsed, 0));
+		electrons[i].radius = radius;
+		sphereTransformMatrices[k++] = t->GetModel();
+	}
+	/*for (int i = 0; i < cbrt(sphereCount); ++i) {
 		for (int j = 0; j < cbrt(sphereCount); ++j) {
 			for (int l = 0; l < cbrt(sphereCount); ++l) {
 				Transform * t = electrons[k].getTransform();
@@ -211,7 +226,7 @@ void bufferSetup() {
 				sphereTransformMatrices[k++] = t->GetModel();
 			}
 		}
-	}
+	}*/
 
 	// TRANSFORM BUFFERS
 	glGenBuffers(1, &masterEntityTransformBufferID);
@@ -252,7 +267,7 @@ void entityBufferDraw() {
 				//}
 			}
 			electrons[i].velocity += sumForces / electrons[i].mass;
-			*t1->GetPos() += 0.050f*electrons[i].velocity;
+			*t1->GetPos() += 0.0050f*electrons[i].velocity;
 			*t1->GetRot() += electrons[i].charge > 0 ? (glm::vec3(0, 0.001, 0)) : (glm::vec3(0, -0.1, 0));
 			sphereTransformMatrices[i] = t1->GetModel();
 			sumForces = glm::vec3(0);
@@ -291,17 +306,34 @@ void render()
 	SDL_WarpMouseInWindow(display.getWindow(), 1440 / 2, 900 / 2); // set initial mouse x,y to center of window.
 	while (!display.closed()) {
 
-		display.clear(0, 0, 0 , 0.5);
-		std::string ec = (display.isFrozen() ? "PAUSED" : "");
+		display.clear(0, 0.025, 0.14 , 0.5);
+
+		std::string ec = (display.isFrozen() ? "PAUSE " : "");
 		const char * c = &ec[0];
 		entityBufferDraw();
-		// Red Text
-		glColor3f(0.8, 0.90, 1.0);
-		glLoadIdentity();
-		glPushMatrix();
-		
-		freetypehelper::print(our_font, 620, 440, c);
-		glPopMatrix();
+
+
+		GLint polygonMode[2];
+		glGetIntegerv(GL_POLYGON_MODE, polygonMode);
+		if (polygonMode[0] == GL_LINE) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+			glColor3f(0.8, 0.90, 1.0);
+			glLoadIdentity();
+			glPushMatrix();
+			freetypehelper::print(our_font, 620, 440, c);
+			glPopMatrix();
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
+		else {
+
+			glColor3f(0.8, 0.90, 1.0);
+			glLoadIdentity();
+			glPushMatrix();
+			freetypehelper::print(our_font, 620, 440, c);
+			glPopMatrix();
+		}
 		display.swapBuffers();
 
 	}

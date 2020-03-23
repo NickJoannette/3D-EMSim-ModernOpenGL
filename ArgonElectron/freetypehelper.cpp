@@ -1,8 +1,5 @@
 #include "freetypehelper.h"
 
-// Wrap Everything In A Namespace, That Way We Can Use A Common
-// Function Name Like "print" Without Worrying About
-// Overlapping With Anyone Else's Code.
 namespace freetypehelper {
 
 	inline int next_p2(int a)
@@ -14,14 +11,13 @@ namespace freetypehelper {
 	}
 
 	void make_dlist(FT_Face face, char ch, GLuint list_base, GLuint * tex_base) {
-
 		// The First Thing We Do Is Get FreeType To Render Our Character
 		// Into A Bitmap.  This Actually Requires A Couple Of FreeType Commands:
 
 		// Load The Glyph For Our Character.
 		if (FT_Load_Glyph(face, FT_Get_Char_Index(face, ch), FT_LOAD_DEFAULT))
 			throw std::runtime_error("FT_Load_Glyph failed");
-
+	
 		// Move The Face's Glyph Into A Glyph Object.
 		FT_Glyph glyph;
 		if (FT_Get_Glyph(face->glyph, &glyph))
@@ -50,12 +46,11 @@ namespace freetypehelper {
 		// Is The FreeType Bitmap Otherwise.
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++) {
-				expanded_data[2 * (i + j * width)] = expanded_data[2 * (i + j * width) + 1] =
-					(i >= bitmap.width || j >= bitmap.rows) ?
-					0 : bitmap.buffer[i + bitmap.width*j];
+				expanded_data[2 * (i + j * width)] = 255;
+				expanded_data[2 * (i + j * width) + 1] =
+					(i >= bitmap.width || j >= bitmap.rows) ? 0 : bitmap.buffer[i + bitmap.width * j];
 			}
 		}
-
 		// Now We Just Setup Some Texture Parameters.
 		glBindTexture(GL_TEXTURE_2D, tex_base[ch]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -73,7 +68,6 @@ namespace freetypehelper {
 
 		// Now We Create The Display List
 		glNewList(list_base + ch, GL_COMPILE);
-
 		glBindTexture(GL_TEXTURE_2D, tex_base[ch]);
 
 		glPushMatrix();
@@ -114,9 +108,10 @@ namespace freetypehelper {
 
 		// Increment The Raster Position As If We Were A Bitmap Font.
 		// (Only Needed If You Want To Calculate Text Length)
-		// glBitmap(0,0,0,0,face->glyph->advance.x >> 6,0,NULL);
+		glBitmap(0,0,0,0,face->glyph->advance.x >> 6,0,NULL);
 
 		// Finish The Display List
+		FT_Done_Glyph(glyph);
 		glEndList();
 	}
 
@@ -211,7 +206,7 @@ namespace freetypehelper {
 			*text = 0;                                    // Do Nothing
 		else {
 			va_start(ap, fmt);                              // Parses The String For Variables
-			vsprintf_s(text, fmt, ap);                            // And Converts Symbols To Actual Numbers
+			vsprintf(text, fmt, ap);                            // And Converts Symbols To Actual Numbers
 			va_end(ap);                                 // Results Are Stored In Text
 		}
 
@@ -269,7 +264,7 @@ namespace freetypehelper {
 			// Know The Length Of The Text That You Are Creating.
 			// If You Decide To Use It Make Sure To Also Uncomment The glBitmap Command
 			// In make_dlist().
-				// glRasterPos2f(0,0);
+			 glRasterPos2f(0,0);
 			glCallLists(lines[i].length(), GL_UNSIGNED_BYTE, lines[i].c_str());
 			// float rpos[4];
 			// glGetFloatv(GL_CURRENT_RASTER_POSITION ,rpos);

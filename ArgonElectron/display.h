@@ -8,10 +8,14 @@
 #include <glm/glm.hpp>
 #include <SDL2/SDL_audio.h>
 #include "camera.h"
+#include "freetypehelper.h"
 class Display
 {
 public:
 
+	struct recentInversion {
+
+	};
 	Display(int Width, int Height, Camera & cam);
 	~Display();
 	void swapBuffers();
@@ -42,8 +46,11 @@ protected:
 		SDL_Surface* ImageOnScreen= NULL;
 		Camera * camera;
 
-		bool mouseButtonDown = false;
+		bool leftMouseButtonDown = false;
+		bool rightMouseButtonDown = false;
 		bool leftControlDown = false;
+
+		freetypehelper::font_data genericDisplayFont;
 
 		int *w = new int;
 		int *h = new int;

@@ -1,4 +1,3 @@
-
 #pragma once
 #include <glut.h>
 #include <String>

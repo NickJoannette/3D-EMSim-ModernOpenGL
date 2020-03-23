@@ -11,10 +11,17 @@
 extern std::vector <cubicEntity> cubic_entities;	glm::vec3 dropspot;
 extern GLfloat * sS;
 extern Electron * eE;
+SDL_AudioDeviceID deviceId;
 
+SDL_AudioSpec wavSpec;
+Uint8 *wavBuffer;
+Uint8 *wavBuffer2;
+Uint8 *wavBuffer3;
+Uint32 wavLength;
+Uint32 wavLength2;
+Uint32 wavLength3;
 Display::Display(int WIDTH, int HEIGHT, Camera & cam)
 {
-	
 	*w = WIDTH;
 	*h = HEIGHT;
 	camera = &cam;
@@ -24,6 +31,15 @@ Display::Display(int WIDTH, int HEIGHT, Camera & cam)
 	if (!subsystem_init)
 	{
 		SDL_Init(SDL_INIT_EVERYTHING);
+		SDL_Init(SDL_INIT_AUDIO);
+
+		SDL_LoadWAV("./sounds/test.wav", &wavSpec, &wavBuffer, &wavLength);
+		SDL_LoadWAV("./sounds/test2.wav", &wavSpec, &wavBuffer2, &wavLength2);
+		SDL_LoadWAV("./sounds/test3.wav", &wavSpec, &wavBuffer3, &wavLength3);
+
+		deviceId = SDL_OpenAudioDevice(NULL, 0, &wavSpec, NULL, 0);
+		SDL_PauseAudioDevice(deviceId, 0);
+
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -54,7 +70,10 @@ Display::Display(int WIDTH, int HEIGHT, Camera & cam)
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	
+
+
+	genericDisplayFont.init("./fonts/vespasian.ttf", 36);
+
 }
 
 Display::~Display()
@@ -64,15 +83,70 @@ Display::~Display()
 
 void Display::swapBuffers()
 {
-	SDL_GL_SwapWindow(mainWindow);
+
 	SDL_Event e;
 	float moveMag = 5;
-
-
-
 	SDL_GetMouseState(&mouseX, &mouseY);
 
-	if (mouseButtonDown) {
+	if (leftControlDown && leftMouseButtonDown) {
+		GLint g[2];
+		glGetIntegerv(GL_POLYGON_MODE, g);
+		int i = -1;
+		if (g[0] == GL_LINE) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			i = 0;
+		}
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glEnable(GL_TEXTURE_2D);
+
+			glColor3f(0.8, 0.90, 1.0);
+			glLoadIdentity();
+			glTranslatef(0, 0, 0);
+			glPushMatrix();
+			std::string s = "Add ";
+			const char * c = &s[0];
+			freetypehelper::print(genericDisplayFont, mouseX, 900 - mouseY, c);
+			glPopMatrix();
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_BLEND);
+			if (i == 0) {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+			}
+	}
+
+	if (leftControlDown && rightMouseButtonDown) {
+		GLint g[2];
+		glGetIntegerv(GL_POLYGON_MODE, g);
+		int i = -1;
+		if (g[0] == GL_LINE) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			i = 0;
+		}
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_TEXTURE_2D);
+
+		glColor3f(0.8, 0.90, 1.0);
+		glLoadIdentity();
+		glTranslatef(0, 0, 0);
+		glPushMatrix();
+		std::string s = "Dec ";
+		const char * c = &s[0];
+		freetypehelper::print(genericDisplayFont, mouseX, 900 - mouseY, c);
+		glPopMatrix();
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+		if (i == 0) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		}
+
+	}
+
+
+	if (rightMouseButtonDown) {
 		if (mouseX >= 1220)
 		{
 			camera->xzangle += 0.0125;
@@ -109,13 +183,20 @@ void Display::swapBuffers()
 		{
 			
 		case SDL_MOUSEBUTTONUP:
-			mouseButtonDown = false;
+			leftMouseButtonDown = false;
+			rightMouseButtonDown = false;
 			break;
 					
 		case SDL_MOUSEBUTTONDOWN:
 			if (e.button.button == SDL_BUTTON_LEFT)
 			{
-
+				leftMouseButtonDown = true;
+				if (!leftControlDown) {
+					SDL_QueueAudio(deviceId, wavBuffer, wavLength/6);
+				}
+				else {
+					SDL_QueueAudio(deviceId, wavBuffer2, wavLength2/6);
+				}
 				glm::vec3 camPos = *camera->GetCameraPos();
 				glm::mat4 transf = glm::inverse(camera->GetPerspective());
 				float x = (2.0f * (float)mouseX) / 1440.0 - 1.0f;
@@ -146,7 +227,6 @@ void Display::swapBuffers()
 								sS[i] = 0.0f;
 								eE[i].charge *= -1;
 							}
-
 						}
 						break;
 					}
@@ -154,8 +234,34 @@ void Display::swapBuffers()
 			}
 			else if (e.button.button == SDL_BUTTON_RIGHT)
 			{                      
-				mouseButtonDown = true;
-
+				rightMouseButtonDown = true;
+				if (leftControlDown) {
+					SDL_QueueAudio(deviceId, wavBuffer3, wavLength3 / 6);
+				}
+				glm::vec3 camPos = *camera->GetCameraPos();
+				glm::mat4 transf = glm::inverse(camera->GetPerspective());
+				float x = (2.0f * (float)mouseX) / 1440.0 - 1.0f;
+				float y = 1.0f - (2.0f * (float)mouseY) / 900.0;
+				float z = 1.0f;
+				glm::vec3 ray_nds = glm::vec3(x, y, z);
+				glm::vec4 ray_clip = glm::vec4(ray_nds, 1.0);
+				glm::vec4 ray_eye = glm::inverse(camera->GetPerspective()) * ray_clip;
+				ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+				glm::vec3 ray_wor = (glm::inverse(camera->GetM_View()) * ray_eye);
+				ray_wor = glm::normalize(ray_wor);
+				for (int i = 0; i < 64; i++) {
+					glm::vec3 o = *eE[i].getTransform()->GetPos() - camPos;
+					float odotd = std::max(0.0f, dot(o, ray_wor));
+					o -= ray_wor * odotd;
+					bool intersection = (glm::length(o) * glm::length(o) <= 1 * 1);
+					if (intersection) {
+						if (leftControlDown) {
+							eE[i].charge /= 2;
+							eE[i].mass /= 2;
+						}
+						break;
+					}
+				}
 			}
 			break;
 
@@ -202,6 +308,16 @@ void Display::swapBuffers()
 
 			case SDLK_z:
 				//zzz / freeze frame
+				Uint32 wavLength;
+				Uint8 *wavBuffer;
+				SDL_AudioSpec wavSpec;
+
+				SDL_LoadWAV("./sounds/open_menu.wav", &wavSpec, &wavBuffer, &wavLength);
+				deviceId = SDL_OpenAudioDevice(NULL, 0, &wavSpec, NULL, 0);
+
+				SDL_QueueAudio(deviceId, wavBuffer, wavLength);
+				SDL_PauseAudioDevice(deviceId, 0);
+
 				freeze = !freeze ? true : false;
 				paused = !paused ? true : false;
 				break;
@@ -287,6 +403,10 @@ void Display::swapBuffers()
 			}
 		}
 	}
+
+
+	SDL_GL_SwapWindow(mainWindow); // Originally was at start of this function. May affect some functionality
+
 }
 
 
