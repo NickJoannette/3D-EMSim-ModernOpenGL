@@ -49,8 +49,10 @@ protected:
 		bool leftMouseButtonDown = false;
 		bool rightMouseButtonDown = false;
 		bool leftControlDown = false;
+		bool leftShiftDown = false;
 
 		freetypehelper::font_data genericDisplayFont;
+		freetypehelper::font_data particleCharacteristicsDisplayFont;
 
 		int *w = new int;
 		int *h = new int;

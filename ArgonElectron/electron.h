@@ -2,7 +2,7 @@
 
 class Electron {
 public:
-	Electron() { charge = 1.0; mass = 1.0; };
+	Electron() { charge = 0.05; mass = 0.05; };
 	Transform * getTransform() { return &transform; };
 	float * getCharge() { return &charge; };
 	void invertCharge() { charge *= -1; }

@@ -70,9 +70,10 @@ Display::Display(int WIDTH, int HEIGHT, Camera & cam)
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	glEnable(GL_CULL_FACE);
 
-
-	genericDisplayFont.init("./fonts/vespasian.ttf", 36);
+	genericDisplayFont.init("./fonts/Oswald-BoldItalic.ttf", 36);
+	particleCharacteristicsDisplayFont.init("./fonts/Oswald-BoldItalic.ttf", 12);
 
 }
 
@@ -85,7 +86,7 @@ void Display::swapBuffers()
 {
 
 	SDL_Event e;
-	float moveMag = 5;
+	float moveMag = 0.15;
 	SDL_GetMouseState(&mouseX, &mouseY);
 
 	if (leftControlDown && leftMouseButtonDown) {
@@ -105,6 +106,7 @@ void Display::swapBuffers()
 			glTranslatef(0, 0, 0);
 			glPushMatrix();
 			std::string s = "Add ";
+
 			const char * c = &s[0];
 			freetypehelper::print(genericDisplayFont, mouseX, 900 - mouseY, c);
 			glPopMatrix();
@@ -138,15 +140,11 @@ void Display::swapBuffers()
 		glPopMatrix();
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_BLEND);
-		if (i == 0) {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-		}
-
+		if (i == 0) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
 
-	if (rightMouseButtonDown) {
+	if (rightMouseButtonDown || leftMouseButtonDown) {
 		if (mouseX >= 1220)
 		{
 			camera->xzangle += 0.0125;
@@ -172,6 +170,63 @@ void Display::swapBuffers()
 			camera->GetM_Forward()->y = cosf(camera->xyangle);
 			camera->xyangle -= 0.0125;
 			camera->UpdateView();
+		}
+
+		 if (leftShiftDown && rightMouseButtonDown) {
+
+			 glm::vec3 camPos = *camera->GetCameraPos();
+			 glm::mat4 transf = glm::inverse(camera->GetPerspective());
+			 float x = (2.0f * (float)mouseX) / 1440.0 - 1.0f;
+			 float y = 1.0f - (2.0f * (float)mouseY) / 900.0;
+			 float z = 1.0f;
+			 glm::vec3 ray_nds = glm::vec3(x, y, z);
+			 glm::vec4 ray_clip = glm::vec4(ray_nds, 1.0);
+			 glm::vec4 ray_eye = glm::inverse(camera->GetPerspective()) * ray_clip;
+			 ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+			 glm::vec3 ray_wor = (glm::inverse(camera->GetM_View()) * ray_eye);
+			 ray_wor = glm::normalize(ray_wor);
+			 for (int i = 0; i < 64; i++) {
+				 glm::vec3 o = *eE[i].getTransform()->GetPos() - camPos;
+				 float odotd = std::max(0.0f, dot(o, ray_wor));
+				 o -= ray_wor * odotd;
+				 bool intersection = (glm::length(o) * glm::length(o) <= 0.2*0.2);
+				 if (intersection) {
+					 std::cout << std::to_string(*eE[i].getCharge()) << std::endl;
+
+					 GLint g[2];
+					 glGetIntegerv(GL_POLYGON_MODE, g);
+					 int wx = -1;
+					 if (g[0] == GL_LINE) {
+						 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+						 wx = 0; 
+					 }
+					 glEnable(GL_BLEND);
+					 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					 glEnable(GL_TEXTURE_2D);
+
+					 glColor3f(1, 1, 1);
+					 glLoadIdentity();
+					 glTranslatef(0, 0, 0);
+					 glPushMatrix();
+					 int h = 64;
+					 for (int k = 0; k < 64; k++) if (k != i) {
+						 if (eE[i].charge >= eE[k].charge) h--;
+					 }
+					 std::string s = "Electron\n\nGalactic Hierarchy: " + std::to_string(h) + "\n\nC: " + std::to_string(*eE[i].getCharge()) +
+						 "\n\nV: (" + std::to_string(eE[i].velocity.x) + "," + std::to_string(eE[i].velocity.y) + "," + std::to_string(eE[i].velocity.z) + ")";
+
+					 const char * c = &s[0];
+					 freetypehelper::print(particleCharacteristicsDisplayFont, mouseX + 25, 1000 - mouseY, c);
+					 glPopMatrix();
+					 glDisable(GL_TEXTURE_2D);
+					 glDisable(GL_BLEND);
+					 if (wx == 0) {
+						 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+					 }
+					 break;
+				 }
+			 }
 		}
 	}
 	//HANDLE MOUSE
@@ -212,12 +267,13 @@ void Display::swapBuffers()
 					glm::vec3 o = *eE[i].getTransform()->GetPos() - camPos;
 					float odotd = std::max(0.0f, dot(o, ray_wor));
 					o -= ray_wor * odotd;
-					bool intersection = (glm::length(o) * glm::length(o) <= 1*1);
+					bool intersection = (glm::length(o) * glm::length(o) <= 0.2*0.2);
 					if (intersection) {
 						if (leftControlDown) {
 							eE[i].charge *= 2;
 							eE[i].mass *= 2;
 						}
+						
 						else {
 							if (sS[i] < 1.0f) {
 								sS[i] = 1.0f;
@@ -253,7 +309,7 @@ void Display::swapBuffers()
 					glm::vec3 o = *eE[i].getTransform()->GetPos() - camPos;
 					float odotd = std::max(0.0f, dot(o, ray_wor));
 					o -= ray_wor * odotd;
-					bool intersection = (glm::length(o) * glm::length(o) <= 1 * 1);
+					bool intersection = (glm::length(o) * glm::length(o) <= 0.2*0.2);
 					if (intersection) {
 						if (leftControlDown) {
 							eE[i].charge /= 2;
@@ -271,7 +327,10 @@ void Display::swapBuffers()
 			{
 			case SDLK_LCTRL:
 				leftControlDown = false;
-				//std::cout << "Left control KEY UP : : : FALSE" << std::endl;
+				break;
+
+			case SDLK_LSHIFT:
+				leftShiftDown = false;
 				break;
 			}
 			break;
@@ -280,15 +339,13 @@ void Display::swapBuffers()
 			{
 
 			case SDLK_LCTRL:
-				//std::cout << "Left control KEY DOWN : : : TRUE" << std::endl;
-
 				leftControlDown = true;
 				break;
 
-
-			case SDLK_DELETE:
-				cubic_entities.erase(cubic_entities.end() - 1);
+			case SDLK_LSHIFT:
+				leftShiftDown = true;
 				break;
+
 			case SDLK_SPACE:
 				for (int i = 0; i < cubic_entities.size(); i++)
 				{
@@ -334,11 +391,11 @@ void Display::swapBuffers()
 				SDL_SetWindowFullscreen(mainWindow, 1);
 				break;
 
-			case SDLK_t:
+			/*case SDLK_t:
 				if (!glIsEnabled(GL_CULL_FACE))	glEnable(GL_CULL_FACE);
 				else glDisable(GL_CULL_FACE);
 				break;
-
+				*/
 			case SDLK_1:
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				break;

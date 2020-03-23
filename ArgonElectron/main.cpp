@@ -92,7 +92,7 @@ void bufferSetup() {
 
 	int sectorCount = 10;
 	int stackCount = 6;
-	float radius = 1;
+	float radius = 0.2;
 	float PI = 3.14159;
 
 	float x, y, z, xy;                              // vertex position
@@ -203,7 +203,7 @@ void bufferSetup() {
 	int k = 0;
 	for (int i = 0; i < sphereCount/2; i++) {
 		Transform * t = electrons[k].getTransform();
-		t->SetPos(glm::vec3(10 * (i), 0, 0));
+		t->SetPos(glm::vec3(1 * (i), 0, 0));
 		t->SetRot(glm::vec3(0, 0.45*(i + 1)*timeElapsed, 0));
 		electrons[i].radius = radius;
 		sphereTransformMatrices[k++] = t->GetModel();
@@ -211,7 +211,7 @@ void bufferSetup() {
 
 	for (int i = sphereCount/2; i < sphereCount; i++) {
 		Transform * t = electrons[k].getTransform();
-		t->SetPos(glm::vec3(10 * (i) - (10*(sphereCount/2)), 0, 12));
+		t->SetPos(glm::vec3(1 * (i) - (1*(sphereCount/2)), 0, 2.5));
 		t->SetRot(glm::vec3(0, 0.45*(i + 1)*timeElapsed, 0));
 		electrons[i].radius = radius;
 		sphereTransformMatrices[k++] = t->GetModel();
@@ -267,7 +267,7 @@ void entityBufferDraw() {
 				//}
 			}
 			electrons[i].velocity += sumForces / electrons[i].mass;
-			*t1->GetPos() += 0.0050f*electrons[i].velocity;
+			*t1->GetPos() += 0.000050f*electrons[i].velocity;
 			*t1->GetRot() += electrons[i].charge > 0 ? (glm::vec3(0, 0.001, 0)) : (glm::vec3(0, -0.1, 0));
 			sphereTransformMatrices[i] = t1->GetModel();
 			sumForces = glm::vec3(0);
